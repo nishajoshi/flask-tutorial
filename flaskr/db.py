@@ -1,4 +1,6 @@
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
+
 
 import click
 from flask import current_app, g
@@ -6,25 +8,23 @@ from flask.cli import with_appcontext
 
 
 def get_db():
-    if 'db' not in g:
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
+    if 'db_conn' not in g:
+        g.db_conn = psycopg2.connect(current_app.config.get('DATABASE'))
+        g.db_conn.autocommit = True
+        g.db = g.db_conn.cursor(cursor_factory=DictCursor)
     return g.db
 
 
 def close_db(e=None):
-    db = g.pop('db', None)
-    if db is not None:
-        db.close()
+    db_conn = g.pop('db_conn', None)
+    if db_conn is not None:
+        db_conn.close()
 
 
 def init_db():
     db = get_db()
     with current_app.open_resource('schema.sql') as f:
-        db.executescript(f.read().decode('utf8'))
+        db.execute(f.read().decode('utf8'))
 
 
 def init_app(app):

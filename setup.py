@@ -8,6 +8,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'flask',
-        'waitress'
+        'waitress',
+        'psycopg2',
     ],
 )

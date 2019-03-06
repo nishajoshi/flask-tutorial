@@ -20,21 +20,22 @@ def register():
         db = get_db()
         error = None
 
+        db.execute(
+            'SELECT id FROM "user" WHERE username = %s', (username,)
+        )
+        result = db.fetchone()
         if not username:
             error = 'Username is required.'
         elif not password:
             error = 'Password is required.'
-        elif db.execute(
-            'SELECT id FROM user WHERE username = ?', (username,)
-        ).fetchone() is not None:
+        elif result is not None:
             error = 'User {} is already registered.'.format(username)
 
         if error is None:
             db.execute(
-                'INSERT INTO user (username, password) VALUES (?, ?)',
+                'INSERT INTO "user" (username, password) VALUES (%s, %s)',
                 (username, generate_password_hash(password))
             )
-            db.commit()
             return redirect(url_for('auth.login'))
 
         flash(error)
@@ -51,9 +52,10 @@ def login():
         password = request.form['password']
         db = get_db()
         error = None
-        user = db.execute(
-            'SELECT * FROM user WHERE username = ?', (username,)
-        ).fetchone()
+        db.execute(
+            'SELECT * FROM "user" WHERE username = %s', (username,)
+        )
+        user = db.fetchone()
 
         if user is None:
             error = 'Incorrect username.'
@@ -79,9 +81,11 @@ def load_logged_in_user():
     if user_id is None:
         g.user = None
     else:
-        g.user = get_db().execute(
-            'SELECT * FROM user WHERE id = ?', (user_id,)
-        ).fetchone()
+        db = get_db()
+        db.execute(
+            'SELECT * FROM "user" WHERE id = %s', (user_id,)
+        )
+        g.user = db.fetchone()
 
 
 
