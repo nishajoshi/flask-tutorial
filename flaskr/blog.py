@@ -23,6 +23,30 @@ def index():
     return render_template('blog/index.html', posts=posts)
 
 
+@bp.route('/post/<post_id>', methods=('GET', 'POST'))
+def open_post(post_id):
+    db = get_db()
+    if request.method == 'POST':
+        body = request.form['body']
+        db.execute(
+            "INSERT INTO comment (author_id, post_id, body) "
+            "VALUES (%s, %s, %s)", (g.user['id'], post_id, body)
+        )
+        return redirect(url_for('blog.open_post', post_id=post_id))
+    db.execute(
+        'SELECT p.id, title, body, created, author_id, username'
+        ' FROM post p JOIN "user" u ON p.author_id = u.id'
+        ' WHERE p.id = %s', (post_id, )
+    )
+    post = db.fetchone()
+    db.execute(
+        'SELECT c.id, body, created, author_id, username'
+        ' FROM comment c JOIN "user" u ON c.author_id = u.id'
+        ' WHERE c.post_id = %s', (post_id, )
+    )
+    comments = db.fetchall()
+    return render_template('blog/open_post.html', post=post, comments=comments)
+
 
 
 @bp.route('/create', methods=('GET', 'POST'))
